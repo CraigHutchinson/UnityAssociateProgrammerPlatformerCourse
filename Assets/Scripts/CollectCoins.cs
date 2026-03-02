@@ -13,9 +13,6 @@ public class CollectCoins : MonoBehaviour
     {
         if (other.gameObject.tag == "Player")
         {
-            playerMovementScript = other.GetComponent<PlayerMovement>();
-            playerMovementScript.soundManager.PlayCoinSound();
-            ScoreManager.score += 10;
             GameObject particles = Instantiate(coinParticles, transform.position, new Quaternion());
             Destroy(gameObject);
         }

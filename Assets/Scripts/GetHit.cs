@@ -8,6 +8,9 @@ public class GetHit : MonoBehaviour
     [Tooltip("Determines when the player is taking damage.")]
     public int hurtCounter = 0;
 
+    [Tooltip("Determines when the player heals through collecting 10 coins.")]
+    public int cointCounter = 0;
+
     [Tooltip("Determines how long till recovery.")]
     public float recoverDuration = 0.5f;
 
@@ -41,23 +44,48 @@ public class GetHit : MonoBehaviour
             OnSlipEnter();
         }
 
-        //Hurt logic
-        if (other.gameObject.tag == "Enemy")
+        // Hit a collider
+        // Note: Triggers are separate callback
+        switch (other.gameObject.tag)
         {
-            enemy = other.gameObject.transform;
-            rb.AddForce(enemy.forward * 1000);
-            rb.AddForce(transform.up * 500);
-            var damageTaken = 5;// enemy.GetComponent<Enemy>().damage;
-            var damageDuration = 0.25f;// enemy.GetComponent<Enemy>().damageDuration;
-            TakeDamage(damageTaken, damageDuration);
+            //Hurt logic
+            case "Enemy":
+            case "Trap":
+                enemy = other.gameObject.transform;
+                rb.AddForce(enemy.forward * 100);
+                rb.AddForce(transform.up * 50);
+
+                //TODO: retrieve from object instead of hardcoding
+                var damageTaken = 5;// enemy.GetComponent<Enemy>().damage;
+                var damageDuration = 0.25f;// enemy.GetComponent<Enemy>().damageDuration;
+                if (other.gameObject.tag == "Trap")
+                {
+                    damageTaken = 2;
+                    damageDuration = 2.0f;
+                }
+
+                TakeDamage(damageTaken, damageDuration);
+                break;
+
         }
-        if (other.gameObject.tag == "Trap")
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        switch (other.gameObject.tag)
         {
-            rb.AddForce(transform.forward * -1000);
-            rb.AddForce(transform.up * 500);
-            var damageTaken = 2;//other.gameObject.GetComponent<Trap>().damage;
-            var damageDuration = 2.0f;// enemy.GetComponent<Trap>().damageDuration;
-            TakeDamage(damageTaken, damageDuration);
+            case "Coin":
+                playerMovementScript.soundManager.PlayCoinSound();
+                ScoreManager.score += 10;
+
+                //TODO: Game settings should control 'healingCounsNeeded' this for gameplay tweaking
+                var healingCounsNeeded = 5;
+                if (++cointCounter % healingCounsNeeded == 0)
+                {
+                    var healingTaken = 25; //TODO: Game settings should control 'healingTaken' this for gameplay tweaking
+                    Takehealing(healingTaken, 0/*TODO: healDuration*/ );
+                }
+                break;
         }
     }
 
@@ -86,16 +114,21 @@ public class GetHit : MonoBehaviour
         playerMovementScript.playerStats.canMove = !moveInhibited;
     }
 
+    private void Takehealing(float healingToTake, float healDuration )
+    {
+        //TODO: Support healDuration
+        playerMovementScript.Heal(healingToTake);
+    }
+
     private void TakeDamage( float damageToTake, float damageDuration)
     {
+        float damageInterval = Mathf.Max(playerMovementScript.soundManager.hitSound.length / 2, 0.25f);
 
-        StartCoroutine(Recover(playerMovementScript.soundManager.hitSound, damageToTake, damageDuration));
+        StartCoroutine(Recover(damageInterval, damageToTake, damageDuration));
 
     }
-    private IEnumerator Recover(AudioClip soundFx, float damageToTake, float damageDuration)
+    private IEnumerator Recover(float damageInterval, float damageToTake, float damageDuration)
     {
-        var damageInterval = Mathf.Max( soundFx.length / 2, 0.25f);
-
         ++hurtCounter;
         UpdatePlayerCanMove();
 
@@ -104,9 +137,7 @@ public class GetHit : MonoBehaviour
         // Apply damage in intervals over the damage duration, playing the hit sound each time
         for (int i = 0; i < damageTicks; ++i)
         {
-            playerMovementScript.soundManager.Play(soundFx);
-
-            playerMovementScript.TakeHealthDamage(damageToTake / damageTicks);
+            playerMovementScript.Hurt(damageToTake / damageTicks);
 
 
             var timeToNextDamage = Mathf.Min(damageInterval, damageDuration);

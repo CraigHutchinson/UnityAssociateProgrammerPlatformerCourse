@@ -11,7 +11,10 @@ public class PlayerMovement : MonoBehaviour
     [System.Serializable]
     public struct Stats
     {
-        [Tooltip("How much health the player has.")]
+        [Tooltip("Limit to how much health the player has.")]
+        public float maxHealth;
+
+        [Tooltip("Current health of the player.")]
         public float health;
 
         [Tooltip("How fast the player runs.")]
@@ -109,9 +112,18 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(Vector3.up * playerStats.jumpForce);
     }
 
-    public void TakeHealthDamage( float damageToTake)
+    public void Heal(float amount)
     {
-        var damageToApply = Mathf.Min(damageToTake, playerMovementScript.playerStats.health);
+        var healAmount = Mathf.Min(amount, playerStats.maxHealth - playerStats.health);
+        playerStats.health += healAmount;
+        Debug.Log($"Player healed {healAmount}, health is now {playerStats.health}");
+    }
+
+    public void Hurt( float amount)
+    {
+        soundManager.PlayHitSound();
+
+        var damageToApply = Mathf.Min(amount, playerStats.health);
         playerStats.health -= damageToApply;
         Debug.Log($"Player took {damageToApply} damage, health is now {playerStats.health}");
     }

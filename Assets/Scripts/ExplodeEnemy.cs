@@ -35,6 +35,7 @@ public class ExplodeEnemy : MonoBehaviour
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
 
         //Start jump in place coroutine
         StartCoroutine("Jump");
@@ -43,7 +44,7 @@ public class ExplodeEnemy : MonoBehaviour
     private void Update()
     {
         //Check to see how close the player is to the enemy
-        if (Vector3.Distance(transform.position, playerTransform.position) > enemyStats.explodeDist)
+        if (Vector3.Distance(transform.position, playerTransform.position) <= enemyStats.explodeDist)
         {
             //Explode if player is within range
             StartCoroutine("Explode");
@@ -55,7 +56,7 @@ public class ExplodeEnemy : MonoBehaviour
     {
         Instantiate(enemyExplosionParticles, transform.position, Quaternion.identity);
 
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.5f);
 
         Destroy(transform.parent.gameObject);
     }
